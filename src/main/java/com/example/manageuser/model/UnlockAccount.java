@@ -6,8 +6,8 @@ import lombok.Data;
 public class UnlockAccount {
 
 	private Integer id;
-	private String eamail;
-	private String temPwd;
+	private String email;
+	private String tempPwd;
 	private String newPwd;
 	private String confirmPwd;
 	

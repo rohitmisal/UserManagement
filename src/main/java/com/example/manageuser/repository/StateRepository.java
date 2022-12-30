@@ -9,7 +9,7 @@ import com.example.manageuser.model.State;
 
 public interface StateRepository  extends JpaRepository<State,Integer>{
 
-	@Query(value="select * from state where countryId=?",nativeQuery = true)
+	@Query(value="select * from state where country_id=?",nativeQuery = true)
 	List<State> findStatesByCountryId(Integer countryId);
 	
 }

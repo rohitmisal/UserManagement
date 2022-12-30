@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import com.example.manageuser.model.City;
@@ -34,11 +36,16 @@ public class UserManagementServiceImpl implements UserManagementService {
 	@Autowired
 	CityRepository cityRepo;
 
+	@Autowired
+	JavaMailSender mailSender;
+
 	@Override
 	public boolean isEmailValid(LoginRequest request) {
 
 		String email = request.getEmail();
+		System.out.println(email);
 		int i = userRepo.isEmailexists(email);
+		System.out.println(i);
 		if (i > 0) {
 			return true;
 		} else {
@@ -86,12 +93,18 @@ public class UserManagementServiceImpl implements UserManagementService {
 		user.setAccountStatus("locked");
 
 		try {
-			if (userRepo.save(user) != null) {
-				sendEmail(user);
-				msg = "User saved Successfully";
+			int i = userRepo.isEmailexists(user.getEmail());
+			if (i > 0) {
+				msg = "User alredy exist with given email";
 			} else {
-				msg = "Unable to save user";
+				if (userRepo.save(user) != null) {
+					sendEmailOnRegistration(user);
+					msg = "User saved Successfully";
+				} else {
+					msg = "Unable to save user";
+				}
 			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -110,7 +123,9 @@ public class UserManagementServiceImpl implements UserManagementService {
 
 			if (unlockAccount.getNewPwd().equals(unlockAccount.getConfirmPwd())) {
 				user.setUserPwd(unlockAccount.getNewPwd());
+				user.setAccountStatus("unlocked");
 				userRepo.save(user);
+				msg = "Account unlocked, please proceed with login";
 			} else {
 				msg = "New password and Confirmed  password are not same please enter correctly";
 			}
@@ -126,13 +141,18 @@ public class UserManagementServiceImpl implements UserManagementService {
 
 		String msg = "";
 		if (isEmailValid(loginRequest)) {
+			System.out.println("Inside  is valid Email");
 			User user = userRepo.findByEmail(loginRequest.getEmail());
+			System.out.println("Inside  is valid user is :" + user.toString());
+
 			if (user.getUserPwd().equals(loginRequest.getPassword())) {
 				if (user.getAccountStatus().equalsIgnoreCase("locked")) {
 					msg = "Your Account Is Locked";
 				} else {
 					msg = "Welcome to portal";
 				}
+			} else {
+				msg = "Please provide valid password";
 			}
 
 		} else {
@@ -148,7 +168,8 @@ public class UserManagementServiceImpl implements UserManagementService {
 		int i = userRepo.isEmailexists(email);
 		if (i > 0) {
 			User user = userRepo.findByEmail(email);
-			sendEmail(user);
+			sendEmailPassword(user);
+			msg = "your password has been send to your registered email";
 		} else {
 			msg = "Please provide Valid Email";
 		}
@@ -176,9 +197,45 @@ public class UserManagementServiceImpl implements UserManagementService {
 
 	}
 
-	public boolean sendEmail(User user) {
+	public boolean sendEmailOnRegistration(User user) {
+		String email = user.getEmail();
+		try {
 
+			SimpleMailMessage mailMessage = new SimpleMailMessage();
+			mailMessage.setTo(email);
+			mailMessage.setSubject("Unlock IES Account");
+			String textMsg = "Hi " + user.getFirstName() + " " + user.getLastName() + ":"
+					+ ", \n Welcome to IES family , your registration is almost complete .\n Please Unlock your account using below details \n Tempopary password : "
+					+ user.getUserPwd() + " \n Link to unlock accont " + " http://localhost:8080/unlockaccount "
+					+ " \n Thanks, \n IES Team";
+
+			mailMessage.setText(textMsg);
+			mailSender.send(mailMessage);
+		} catch (Exception e) {
+			System.out.println(e);
+		}
 		return false;
+
+	}
+
+	public boolean sendEmailPassword(User user) {
+		String email = user.getEmail();
+		try {
+
+			SimpleMailMessage mailMessage = new SimpleMailMessage();
+			mailMessage.setTo(email);
+			mailMessage.setSubject("Unlock IES Account");
+			String textMsg = "Hi " + user.getFirstName() + " " + user.getLastName() + ":"
+					+ ", \nPlease Unlock your account using below details \n your password : " + user.getUserPwd()
+					+ " \n Thanks, \n IES Team";
+
+			mailMessage.setText(textMsg);
+			mailSender.send(mailMessage);
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+		return false;
+
 	}
 
 }

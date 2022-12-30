@@ -21,7 +21,7 @@ public class User {
 	private String gender;
 	private String country;
 	private String state;
-	private String citys;
+	private String city;
 	private String userPwd;
 	private String accountStatus;
 	
